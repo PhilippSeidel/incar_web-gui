@@ -1,0 +1,308 @@
+/* Dark "frosted glass" console theme for the incar web GUI. */
+:root {
+  --bg: #060a13;
+  --glass: rgba(148, 163, 184, 0.07);
+  --glass-hover: rgba(148, 163, 184, 0.1);
+  --glass-border: rgba(148, 163, 184, 0.16);
+  --inset: rgba(2, 6, 23, 0.45);
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #38bdf8;
+  --accent-2: #818cf8;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #f43f5e;
+  --idle: #64748b;
+}
+
+/* backdrop: colored glows give the frosted panels something to blur */
+body.body--dark {
+  background:
+    radial-gradient(1100px 600px at 8% -10%, rgba(56, 189, 248, 0.18), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, rgba(129, 140, 248, 0.17), transparent 60%),
+    radial-gradient(900px 600px at 45% 115%, rgba(16, 185, 129, 0.1), transparent 60%),
+    var(--bg) !important;
+  background-attachment: fixed !important;
+  color: var(--text);
+  font-family: Inter, Roboto, ui-sans-serif, system-ui, sans-serif;
+}
+/* faint engineering grid, fading out downwards */
+body.body--dark::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 25%, transparent 75%);
+}
+.nicegui-content { position: relative; max-width: 1840px; margin: 0 auto; }
+
+/* frosted surfaces. Not on the cards: a backdrop blur next to constantly repainting content (camera streams) made
+   Chromium composite stale, tinted tiles over them; over a smooth gradient it hardly shows anyway */
+.q-header.glass-bar, .q-dialog .q-card {
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+.glass {
+  background: linear-gradient(var(--glass), var(--glass)), rgba(6, 10, 19, 0.55) !important;  /* hides the grid */
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 48px -28px rgba(0, 0, 0, 0.7) !important;
+}
+.q-header.glass-bar {
+  background: rgba(6, 10, 19, 0.6) !important;
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: none;
+}
+.q-dialog .q-card {
+  background: rgba(15, 23, 42, 0.78) !important;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px !important;
+}
+.q-dialog__backdrop { background: rgba(2, 6, 23, 0.7) !important; }  /* no blur: the page behind keeps updating */
+.q-menu { background: rgba(15, 23, 42, 0.92) !important; backdrop-filter: blur(14px); border: 1px solid var(--glass-border); border-radius: 12px !important; }
+.q-menu { padding: 4px; }
+.q-menu .q-item { min-height: 36px; border-radius: 8px; color: var(--text); font-size: 0.875rem; }
+.q-menu .q-focus-helper { display: none; }  /* Quasar's grey hover overlay */
+.q-menu .q-item:hover, .q-menu .q-manual-focusable--focused { background: rgba(56, 189, 248, 0.12); }
+.q-menu .q-item--active { color: #7dd3fc; background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.18)); }
+.q-tooltip { background: rgba(15, 23, 42, 0.95); color: var(--text); border: 1px solid var(--glass-border); border-radius: 10px;
+             padding: 6px 10px; font-size: 0.78rem; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.8); }
+
+/* brand + card headings */
+/* the L_NK wordmark as on the-link.se: Wix Madefor Text (SIL OFL, bundled so it works offline), regular, near-white */
+@font-face {
+  font-family: 'Wix Madefor Text'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/wix-madefor-text-400-latin.woff2') format('woff2');
+}
+.brand-logo {
+  font-family: 'Wix Madefor Text', 'Helvetica Neue', sans-serif; font-weight: 400; font-size: 30px; line-height: 1;
+  letter-spacing: 0; color: rgb(246, 252, 255);
+}
+.brand-name { font-weight: 700; font-size: 1.1rem; letter-spacing: 0.01em; }
+.brand-sub { color: var(--text-dim); font-size: 0.8rem; }
+.card-icon {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #7dd3fc;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.2));
+  border: 1px solid rgba(125, 211, 252, 0.2);
+}
+.card-title, .section-label {
+  text-transform: uppercase; letter-spacing: 0.09em; font-weight: 600; font-size: 0.74rem;
+}
+.card-title { color: #cbd5e1; }
+.section-label { color: var(--text-dim); font-size: 0.68rem; }
+.hint { color: var(--text-dim); font-size: 0.72rem; line-height: 1.35; }
+.q-separator { background: var(--glass-border) !important; }
+
+/* status pills with glowing dots */
+.pill {
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 10px; border-radius: 999px;
+  background: rgba(148, 163, 184, 0.08); border: 1px solid var(--glass-border);
+  font-size: 0.78rem; color: var(--text); white-space: nowrap;
+}
+.pill .q-icon { color: var(--text-dim); font-size: 0.95rem; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); flex: none; }
+.pill[data-state=ok] .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.pill[data-state=warn] .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.pill[data-state=bad] .dot, .pill[data-state=rec] .dot { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+.pill[data-state=rec] .dot { animation: pulse 1.2s ease-in-out infinite; }
+.pill[data-state=ok] { border-color: rgba(34, 197, 94, 0.35); }
+.pill[data-state=bad], .pill[data-state=rec] { border-color: rgba(244, 63, 94, 0.4); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+/* controls */
+.q-btn { border-radius: 10px !important; font-weight: 500; letter-spacing: 0.01em; }
+/* Quasar's colour classes are !important inside NiceGUI's last cascade layer; for !important the earliest layer
+   wins, so these overrides live in NiceGUI's first layer ("theme") */
+@layer theme {
+  .q-btn.bg-primary { background: linear-gradient(135deg, #3b82f6, #6366f1) !important; box-shadow: 0 8px 20px -10px rgba(99, 102, 241, 0.9); }
+  .q-btn.bg-positive { background: linear-gradient(135deg, #16a34a, #0d9488) !important; box-shadow: 0 8px 20px -10px rgba(22, 163, 74, 0.9); }
+  .q-btn.bg-warning { background: linear-gradient(135deg, #f59e0b, #d97706) !important; box-shadow: 0 8px 20px -10px rgba(245, 158, 11, 0.9); }
+  .q-btn.bg-negative { background: linear-gradient(135deg, #e11d48, #db2777) !important; box-shadow: 0 8px 20px -10px rgba(225, 29, 72, 0.9); }
+  .q-btn--flat.text-primary { color: #93a8ff !important; }
+  .q-btn.rec-control.disabled { opacity: 0.35 !important; }  /* discard before a recording: visible, clearly off */  /* brand blue is too dark for text on the dark glass */
+}
+.q-field { --q-primary: var(--accent); }  /* focus border and label */
+.q-field__native, .q-field__input { color: var(--text) !important; }
+.q-field--outlined:hover .q-field__control:before { border-color: rgba(148, 163, 184, 0.35) !important; }
+.q-field--focused .q-field__control { box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
+.q-toggle__track { opacity: 1; background: rgba(148, 163, 184, 0.22); }
+.q-toggle__inner--truthy .q-toggle__track { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.q-toggle__thumb:after { background: #94a3b8; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
+.q-toggle__inner--truthy .q-toggle__thumb:after { background: #f8fafc; }
+.q-btn-group { border-radius: 10px !important; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: none !important; }
+.q-btn-group .q-btn { border-radius: 0 !important; }
+.q-field--outlined .q-field__control { border-radius: 10px !important; background: var(--inset); }
+.q-field--outlined .q-field__control:before { border-color: var(--glass-border) !important; }
+.q-expansion-item { border-radius: 12px; overflow: hidden; background: var(--inset); }
+.q-tab { border-radius: 10px; }
+.q-tab-panels, .q-tab-panel { background: transparent !important; }
+
+/* camera tiles */
+.cam-tile {
+  position: relative; border-radius: 14px; overflow: hidden; background: #020617;
+  border: 1px solid var(--glass-border); box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.9);
+}
+.cam-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.cam-nodata {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; background: rgba(2, 6, 23, 0.75);
+  color: var(--text-dim); font-size: 0.8rem;
+}
+.cam-nodata .q-icon { font-size: 2.8rem; color: #fda4af; }
+.cam-badge {
+  position: absolute; top: 10px; left: 10px; z-index: 1;
+  background: rgba(2, 6, 23, 0.7);
+}
+.cam-empty {
+  min-height: 180px; border-radius: 14px; border: 1px dashed var(--glass-border); color: var(--text-dim);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* teleop axis bars: centred, fill grows left or right */
+.axis { display: grid; grid-template-columns: 3.2rem 1fr 3.2rem; align-items: center; gap: 10px; width: 100%;
+        font-size: 0.75rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.axis > :last-child { text-align: right; color: var(--text); }
+.axis-track { position: relative; height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.14); }
+.axis-track::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: rgba(148, 163, 184, 0.45); }
+.axis-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 999px;
+             background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+             transition: left 0.08s linear, width 0.08s linear; }
+
+/* full-screen windows (trainer, inspector, progress): no blur. A full-screen backdrop-filter over a page that
+   keeps changing (camera feeds, teleop bars) makes the browser re-blur the whole screen continuously */
+.q-dialog__inner--maximized .q-card { border-radius: 0 !important; background: #0a0f1c !important; }
+.q-dialog__inner--maximized .q-card, .q-dialog__inner--maximized .glass { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* dataset inspector */
+.demo-item { border-radius: 10px; margin-bottom: 2px; }
+.demo-item .q-item__label--caption { color: var(--text-dim); }
+.demo-active { background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(129, 140, 248, 0.16)); box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.3); }
+.q-dialog video { background: #020617; border: 1px solid var(--glass-border); }
+
+/* training: config editor */
+.form-section { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 16px;
+                background: var(--glass); border: 1px solid var(--glass-border); }
+.form-sub { border-radius: 12px; background: var(--inset); border: 1px solid rgba(148, 163, 184, 0.1); }
+.form-sub > .q-expansion-item__container > .q-item { font-weight: 600; text-transform: capitalize; }
+.form-sub .q-expansion-item__content { display: flex; flex-direction: column; gap: 12px; padding: 4px 14px 14px; }
+.list-item { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px;
+             background: rgba(148, 163, 184, 0.06); border: 1px solid var(--glass-border); }
+.list-index { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-size: 0.75rem;
+              background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(129, 140, 248, 0.25)); }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem;
+          border: 1px solid var(--glass-border); background: var(--inset); }
+.banner[data-state=bad] { border-color: rgba(244, 63, 94, 0.5); background: rgba(244, 63, 94, 0.1); }
+.banner[data-state=bad] .q-icon { color: var(--bad); }
+.banner[data-state=warn] { border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.1); }
+.banner[data-state=warn] .q-icon { color: var(--warn); }
+.banner[data-state=ok] { border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.1); }
+.banner[data-state=ok] .q-icon { color: var(--ok); }
+.q-dialog .cm-editor { height: 100%; border-radius: 12px; }
+
+/* training: progress */
+.pill[data-state=run] .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+.pill[data-state=run] { border-color: rgba(56, 189, 248, 0.4); }
+.train-pill { cursor: pointer; }
+.train-pill:hover, .train-pill:focus-visible { background: rgba(148, 163, 184, 0.16); }
+.train-pill.run-active { background: rgba(56, 189, 248, 0.16); box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.5); }
+.train-bar { position: relative; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 6px;
+             background: rgba(148, 163, 184, 0.14); }
+.train-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; transition: width 0.6s ease;
+              background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 16px rgba(56, 189, 248, 0.6); }
+.train-fill[data-state=run] { background-size: 200% 100%; animation: sheen 2.4s linear infinite;
+  background-image: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent)); }
+.train-fill[data-state=bad] { background: var(--bad); box-shadow: none; }
+.task-bar { height: 6px; margin-top: 0; }
+@keyframes sheen { to { background-position: -200% 0; } }
+.stat-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 14px;
+             background: var(--glass); border: 1px solid var(--glass-border); }
+.stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.train-log { font-size: 0.74rem; line-height: 1.45; }
+.train-log .log-step { color: #64748b; }
+.train-log .log-phase { color: #7dd3fc; font-weight: 600; }
+.train-log .log-warn { color: #fbbf24; }
+.train-log .log-error { color: #fb7185; }
+.train-log .log-plain { color: #cbd5e1; }
+
+/* data views */
+.q-table__container, .q-table, .q-table__card { background: transparent !important; box-shadow: none !important; }
+.q-table th { color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; }
+.q-table td { font-variant-numeric: tabular-nums; }
+.q-table tbody td { border-color: rgba(148, 163, 184, 0.1) !important; }
+.nicegui-log { background: var(--inset) !important; border: 1px solid var(--glass-border); border-radius: 12px; font-size: 0.78rem; padding: 8px 10px; }
+.nicegui-markdown table { font-size: 0.75rem; width: 100%; }
+.nicegui-markdown th, .nicegui-markdown td { padding: 3px 6px; border-bottom: 1px solid rgba(148, 163, 184, 0.12); text-align: left; }
+.nicegui-markdown th { color: var(--text-dim); }
+.nicegui-markdown kbd, .nicegui-markdown code { background: rgba(148, 163, 184, 0.15); border-radius: 5px; padding: 1px 5px; }
+
+* { scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.3) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pill .dot, .axis-fill, .train-fill { animation: none !important; transition: none !important; }
+}
+
+/* a panel tinted by a connection state (robot card): same states as the pills */
+.glass[data-state=ok] { border-color: rgba(34, 197, 94, 0.55) !important;
+  background: linear-gradient(rgba(34, 197, 94, 0.09), rgba(34, 197, 94, 0.03)), rgba(6, 10, 19, 0.55) !important; }
+.glass[data-state=warn] { border-color: rgba(245, 158, 11, 0.55) !important;
+  background: linear-gradient(rgba(245, 158, 11, 0.09), rgba(245, 158, 11, 0.03)), rgba(6, 10, 19, 0.55) !important; }
+.glass[data-state=bad] { border-color: rgba(244, 63, 94, 0.55) !important;
+  background: linear-gradient(rgba(244, 63, 94, 0.09), rgba(244, 63, 94, 0.03)), rgba(6, 10, 19, 0.55) !important; }
+.series-swatch { width: 14px; height: 3px; border-radius: 2px; flex: none; }  /* a training's colour in the combined chart */
+/* record and discard: a camera-style pair, same pill shape and height */
+.q-btn.rec-control { border-radius: 999px !important; min-height: 40px; padding: 0 18px; }
+.q-btn.rec-control.q-btn--outline::before { border-width: 1.5px; }
+/* the text features (e.g. the prompt) active at the video frame on screen, see demo_sync.js */
+.text-overlay { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px;
+  border-radius: 10px; overflow: hidden; background: rgba(2, 6, 23, 0.78); color: #f8fafc; font-size: 0.95rem;
+  text-align: center; pointer-events: none; }
+.text-overlay > div { padding: 6px 12px; }  /* background: the text's timeline colour, set by demo_sync.js */
+.text-overlay:empty { display: none; }
+
+/* easter egg: hover "incar / web GUI" for the credits (static/credits.html) */
+.brand-credit { position: relative; cursor: default; outline: none; }
+.credit-popup {
+  position: absolute; top: calc(100% + 12px); left: 0; z-index: 60; width: 300px; padding: 16px 18px 14px;
+  border-radius: 18px; background: #0f172a; border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.85); opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translateY(-8px) scale(0.96); transform-origin: top left;
+  transition: opacity 0.2s ease, transform 0.25s ease, visibility 0.2s;
+}
+.brand-credit:hover .credit-popup, .brand-credit:focus .credit-popup { opacity: 1; visibility: visible; transform: none; }
+.credit-stage { position: relative; height: 72px; display: flex; justify-content: center; align-items: center; gap: 14px; }
+.credit-stage svg { display: block; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5)); }
+.credit-text { margin-top: 10px; text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+.credit-text b { color: var(--text); font-weight: 600; }
+.credit-burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.credit-burst i { position: absolute; width: 6px; height: 6px; margin: -3px; border-radius: 50%; opacity: 0; }
+.credit-burst i:nth-child(odd) { background: #d97757; }
+.credit-burst i:nth-child(even) { background: #c9a066; }
+.credit-burst i:nth-child(1) { --dx: 0px; --dy: -26px; } .credit-burst i:nth-child(2) { --dx: 22px; --dy: -13px; }
+.credit-burst i:nth-child(3) { --dx: 22px; --dy: 13px; } .credit-burst i:nth-child(4) { --dx: 0px; --dy: 26px; }
+.credit-burst i:nth-child(5) { --dx: -22px; --dy: 13px; } .credit-burst i:nth-child(6) { --dx: -22px; --dy: -13px; }
+/* slide in from both sides, meet in a high five, then the spark spins and Philipp nods; the burst repeats */
+.brand-credit:hover .credit-in-left, .brand-credit:focus .credit-in-left { animation: credit-left 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+.brand-credit:hover .credit-in-right, .brand-credit:focus .credit-in-right { animation: credit-right 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+.brand-credit:hover .credit-claude, .brand-credit:focus .credit-claude { animation: credit-spin 8s linear 0.9s infinite; }
+.brand-credit:hover .credit-philipp, .brand-credit:focus .credit-philipp { animation: credit-nod 2.4s ease-in-out 0.9s infinite; transform-origin: 50% 90%; }
+.brand-credit:hover .credit-burst i, .brand-credit:focus .credit-burst i { animation: credit-burst 2.4s ease-out 0.55s infinite; }
+@keyframes credit-left { 0% { transform: translateX(-90px) rotate(-200deg); opacity: 0; } 60% { transform: translateX(10px) rotate(10deg); opacity: 1; } 100% { transform: none; } }
+@keyframes credit-right { 0% { transform: translateX(90px); opacity: 0; } 60% { transform: translateX(-10px); opacity: 1; } 100% { transform: none; } }
+@keyframes credit-spin { to { transform: rotate(360deg); } }
+@keyframes credit-nod { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg) translateY(-2px); } 50% { transform: rotate(0); } 75% { transform: rotate(5deg); } }
+@keyframes credit-burst { 0% { transform: translate(0, 0) scale(0.3); opacity: 1; } 35% { opacity: 1; } 60%, 100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .credit-popup { transition: none; }
+  .brand-credit .credit-in-left, .brand-credit .credit-in-right, .brand-credit .credit-claude,
+  .brand-credit .credit-philipp, .brand-credit .credit-burst i { animation: none !important; }
+}
+/* Phosphor duotone: the filled back layer, a little stronger than the font's 20 % so it shows on the dark theme */
+.ph-duotone::before { opacity: 0.35 !important; }
+/* "alpha" next to the GUI name in the header */
+.alpha-tag { padding: 1px 7px; border-radius: 999px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; line-height: 1.5; color: #fbbf24; background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.45); }
