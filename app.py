@@ -239,8 +239,7 @@ def read_frame(name: str, shape) -> np.ndarray | None:
     _, h, w = shape
     if name not in _shm:
         try:
-            # track=False: never unlink incar's segment when this GUI exits
-            _shm[name] = shared_memory.SharedMemory(f'incar_{name}', track=False)
+            _shm[name] = agent.open_camera_shm(name)
         except FileNotFoundError:
             return None
     shm = _shm[name]

@@ -252,11 +252,21 @@ def trained_policies(workspace: str) -> list[dict]:
 
 # ─── camera frames for a remote GUI ───────────────────────────────────────────────────────────────────────────
 
+def open_camera_shm(name: str):
+    """Open incar's existing shared memory `incar_<name>` without ever unlinking it when this process exits."""
+    from multiprocessing import resource_tracker, shared_memory
+    try:
+        return shared_memory.SharedMemory(f'incar_{name}', track=False)
+    except TypeError:  # Python < 3.13: no track argument, so stop the resource tracker from unlinking it at exit
+        shm = shared_memory.SharedMemory(f'incar_{name}')
+        resource_tracker.unregister(shm._name, 'shared_memory')
+        return shm
+
+
 def pump(streams: list, interval: float = 1 / 30) -> None:
     """Stream changed camera frames from incar's shared memory as JPEG: a JSON header line, then the bytes.
     Runs until the GUI closes the connection."""
     import io
-    from multiprocessing import shared_memory
     import numpy as np
     from PIL import Image
     out = sys.stdout.buffer
@@ -265,10 +275,7 @@ def pump(streams: list, interval: float = 1 / 30) -> None:
         for name, h, w in streams:
             try:
                 if name not in maps:
-                    try:
-                        maps[name] = shared_memory.SharedMemory(f'incar_{name}', track=False)  # never unlink incar's
-                    except TypeError:  # Python < 3.13
-                        maps[name] = shared_memory.SharedMemory(f'incar_{name}')
+                    maps[name] = open_camera_shm(name)
                 if maps[name].size < h * w * 3:
                     continue
                 frame = np.ndarray((h, w, 3), np.uint8, maps[name].buf).copy()
