@@ -277,6 +277,15 @@ class ConfigForm:
                 e.sender.props(remove='error')
                 put(parsed if parsed or not f.get('nullable') else None)
             widget = ui.input(label, value=text, placeholder='e.g. 216, 288', on_change=numbers)
+        elif kind == 'any' and isinstance(value, (int, float, str)) and not isinstance(value, bool):
+            def scalar(e) -> None:  # a number stays a number, anything else is text
+                text = (e.value or '').strip()
+                try:
+                    parsed = json.loads(text)
+                except ValueError:
+                    parsed = text
+                put(parsed if isinstance(parsed, (int, float)) and not isinstance(parsed, bool) else text)
+            widget = ui.input(label, value=str(value), on_change=scalar).props('hint="A number or text"')
         elif kind == 'list' and f['item']['kind'] == 'choice':
             self.choice_list(f, data, touch)
         elif kind == 'list' and f['item']['kind'] == 'struct':
@@ -843,8 +852,8 @@ class DatasetCreator:
 
 
 class CameraManager:
-    """Dialog: the workspace's cameras (workspace_config.json) plus the streams the core shows. Add and remove edit the
-    config and reload the workspace (incar has no camera API); hiding only affects this GUI."""
+    """Dialog: the workspace's cameras (workspace_config.json) plus the streams the core shows. Add, edit and remove
+    change the config and reload the workspace (incar has no camera API); hiding only affects this GUI."""
 
     def __init__(self, context: Callable[[], Awaitable[tuple | None]], streams: Callable[[], list],
                  hidden: set, toggle_hidden: Callable[[str], None], busy: Callable[[], str | None],
@@ -854,6 +863,8 @@ class CameraManager:
         self.host = self.workspace = self.schema = None
         self.config: dict = {}
         self.values: dict = {}
+        self.editing: str | None = None  # the workspace camera in the form, None: a new one
+        self.listed: set = set()  # the core's streams when the list was drawn
         with ui.dialog() as self.dialog, ui.card().classes('w-full max-w-3xl gap-4 p-5'):
             with ui.row().classes('w-full items-center no-wrap'):
                 heading('Cameras', 'ph-video-camera')
@@ -861,16 +872,19 @@ class CameraManager:
                 icon_button('ph-x', 'Close', self.dialog.close)
             self.list = ui.column().classes('w-full gap-2')
             ui.separator()
-            ui.label('Add a camera to the workspace').classes('section-label')
+            self.section = ui.label().classes('section-label')
             with ui.row().classes('w-full no-wrap gap-3'):
                 self.name = ui.input('Camera name', placeholder='e.g. wrist_left').classes('grow')
                 self.type = ui.select([], label='Type', on_change=self.show_fields).classes('w-48')
             self.fields = ui.column().classes('w-full')
             with ui.row().classes('w-full items-center gap-3'):
-                ui.label('Adding or removing reloads the workspace: incar restarts its cameras and deselects '
+                ui.label('Adding, editing or removing reloads the workspace: incar restarts its cameras and deselects '
                          'the dataset and policy.').classes('hint grow')
-                ui.button('Add camera', icon='ph-plus-circle', on_click=self.add).props('color=positive')
+                self.cancel_button = ui.button('Cancel', on_click=self.new).props('flat')
+                self.submit_button = ui.button(on_click=self.submit).props('color=positive')
             self.banner = ui.column().classes('w-full gap-2')
+        # the core reports renamed, added or removed cameras only after its reload: redraw when its streams change
+        ui.timer(1.0, lambda: self.dialog.value and self.schema and set(self.streams()) != self.listed and self.render())
 
     def config_path(self) -> str:
         return f'{self.workspace}/workspace_config.json'
@@ -881,20 +895,57 @@ class CameraManager:
             return
         self.host, self.workspace = context
         self.banner.clear()
-        self.name.set_value('')
         self.dialog.open()
+        self.type.disable()
+        self.fields.clear()
+        with self.fields, ui.row().classes('items-center gap-2'):  # the first time per PC this imports torch there
+            ui.spinner()
+            ui.label(f'Loading the camera types from incar on {self.host.label}…').classes('hint')
         try:
             self.config = json.loads(await self.host.call('read_text', self.config_path()))
             self.schema = await training.schema(self.host)
         except Exception as e:  # show why instead of an empty dialog
+            self.fields.clear()
             note(self.banner, f'Could not load the cameras from {self.host.label}: {e}', 'bad')
             return
-        self.type.set_options(sorted(self.schema['registries']['camera']), value=self.type.value)
-        self.show_fields()
+        self.type.enable()
         self.render()
+        self.new()
+
+    def types(self) -> dict:
+        return self.schema['registries']['camera']
+
+    def new(self) -> None:
+        """The form for a new camera, with the first type preselected so its properties show right away."""
+        self.editing, self.values = None, {}
+        self.name.set_value('')
+        self.section.set_text('Add a camera to the workspace')
+        self.submit_button.set_text('Add camera')
+        set_props(self.submit_button, 'icon=ph-plus-circle')
+        self.cancel_button.set_visibility(False)
+        self.type.set_options(sorted(self.types()), value=self.type.value if self.type.value in self.types()
+                              else min(self.types(), default=None))
+        self.show_fields()
+
+    def edit(self, name: str) -> None:
+        camera = (self.config.get('cameras') or {})[name]
+        if camera.get('type') not in self.types():
+            note(self.banner, f'The camera type "{camera.get("type")}" is not installed on {self.host.label}, so '
+                              f'"{name}" can only be removed here.', 'warn')
+            return
+        self.banner.clear()
+        self.editing, self.values = name, {k: v for k, v in camera.items() if k != 'type'}
+        self.name.set_value(name)
+        self.section.set_text(f'Edit camera "{name}"')
+        self.submit_button.set_text('Save camera')
+        set_props(self.submit_button, 'icon=ph-floppy-disk')
+        self.cancel_button.set_visibility(True)
+        self.type.set_value(camera['type'])
+        self.show_fields()
 
     def render(self) -> None:
         cameras = self.config.get('cameras') or {}
+        self.listed = set(self.streams())
         self.list.clear()
         with self.list:
             for name in sorted(set(cameras) | set(self.streams())):
@@ -908,6 +959,7 @@ class CameraManager:
                     icon_button('ph-eye-slash' if hidden else 'ph-eye', 'Show in the GUI' if hidden else 'Hide in the GUI',
                                 partial(self.hide, name))
                     if name in cameras:
+                        icon_button('ph-pencil-simple', 'Edit its properties', partial(self.edit, name))
                         icon_button('ph-trash', 'Remove from the workspace', partial(self.remove, name))
             if not cameras:
                 ui.label('No cameras in this workspace yet.').classes('hint')
@@ -917,30 +969,38 @@ class CameraManager:
         self.render()
 
     def show_fields(self) -> None:
-        self.values = {}
+        """Every property of the chosen type; values set so far stay where the new type has them too."""
         self.fields.clear()
-        if self.type.value and self.schema:
-            with self.fields:
-                ConfigForm(self.schema, {}, lambda: None).fields(self.schema['registries']['camera'][self.type.value],
-                                                                 self.values, lambda: None)
+        if not (self.type.value and self.schema):
+            return
+        fields = self.types()[self.type.value]
+        self.values = {k: v for k, v in self.values.items() if k in {f['name'] for f in fields}}
+        with self.fields:
+            ConfigForm(self.schema, {}, lambda: None).fields(fields, self.values, lambda: None)
 
-    async def add(self) -> None:
+    async def submit(self) -> None:
+        """Add the camera in the form, or save the edited one (a new name renames it, keeping its place)."""
         name = (self.name.value or '').strip()
+        cameras = self.config.get('cameras') or {}
         self.banner.clear()
         if not training.NAME.fullmatch(name):
             note(self.banner, 'Name the camera: letters, digits, ".", "_" or "-".', 'bad')
-        elif name in (self.config.get('cameras') or {}) or name in self.streams():
+        elif name != self.editing and (name in cameras or name in self.streams()):
             note(self.banner, f'A camera "{name}" already exists.', 'bad')
         elif not self.type.value:
             note(self.banner, 'Choose the camera type.', 'bad')
-        elif await self.save({**self.config.get('cameras', {}), name: {'type': self.type.value, **self.values}}):
-            self.name.set_value('')
-            self.show_fields()
+        else:
+            entry = {'type': self.type.value, **self.values}
+            updated = ({name if k == self.editing else k: entry if k == self.editing else v for k, v in cameras.items()}
+                       if self.editing in cameras else {**cameras, name: entry})
+            if await self.save(updated):
+                self.new()
 
     async def remove(self, name: str) -> None:
         if await confirm(f'Remove camera "{name}" from the workspace? incar stops it and reloads the workspace.',
-                         'Remove'):
-            await self.save({k: v for k, v in self.config['cameras'].items() if k != name})
+                         'Remove') and await self.save({k: v for k, v in self.config['cameras'].items() if k != name}) \
+                and self.editing == name:
+            self.new()
 
     async def save(self, cameras: dict) -> bool:
         """Check the new config with incar, write it and reload the workspace."""
